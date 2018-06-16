@@ -1,0 +1,25 @@
+{
+  "name": "confessionbot",
+  "version": "1.0.0",
+  "description": "Confess your sins",
+  "main": "main.js",
+  "dependencies": {
+    "nedb-promises": "^3.0.0",
+    "telegraf": "^3.21.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "/submit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.rory.no/pindacolada/confessionbot"
+  },
+  "keywords": [
+    "telegram",
+    "confession",
+    "bot"
+  ],
+  "author": "Pindacolada",
+  "license": "ISC"
+}
