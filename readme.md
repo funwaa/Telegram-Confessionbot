@@ -3,6 +3,6 @@
 <code>
     config.json
     {
-        "token": "<telegram token>"
+        "token": "insert-telegram-token-here"
     }
 </code>
