@@ -79,7 +79,7 @@ function sendConfessions(message, reply) {
 
     };
     if(commandOptions[1].toLowerCase() == 'top') {
-        return confessions.find({}).sort({ up: -1, down: 1 }).limit(5)
+        return confessions.find({}).sort({ up: -1 }).limit(10)
             .then((res => {
                 const random = Math.floor(Math.random() * res.length);
                 res = res[random]
