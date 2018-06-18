@@ -18,8 +18,8 @@ function countConfessions() {
 
 const voteButtons = res => {
     return Markup.inlineKeyboard([
-        Markup.callbackButton('Upvote', `up ${res.id}`),
-        Markup.callbackButton('Downvote', `down ${res.id}`)
+        Markup.callbackButton('👍', `up ${res.id}`),
+        Markup.callbackButton('👎', `down ${res.id}`)
     ]).extra()};
 
 const checkUser = message => {
@@ -42,7 +42,7 @@ const checkUser = message => {
 function submitConfession(message, reply) {
     if(!message.text) return reply("My child i am blind, i can't see what you are showing me.");
     if(message.text.startsWith('/') == true) return reply("I don't understand what you are trying to tell me!");
-    if(message.text.length > 240) return reply("Pardon, that's too much for me to remember " + message.text.length + '/240');
+    if(message.text.length > 420) return reply("Pardon, that's too much for me to remember " + message.text.length + '/420');
     return countConfessions()
         .then(res => ({
             id: res,
@@ -66,7 +66,7 @@ function sendConfessions(message, reply) {
                 const random = Math.floor(Math.random() * res);
                 return confessions.findOne({ id: random })
                     .then((res) => {
-                        return reply(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
+                        return reply(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
                     })
             })
     };
@@ -74,7 +74,7 @@ function sendConfessions(message, reply) {
         return confessions.find({}).sort({ id: -1 }).limit(1)
             .then((res => {
                 res = res[0]
-                return reply(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res)) 
+                return reply(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res)) 
             }))
 
     };
@@ -83,7 +83,7 @@ function sendConfessions(message, reply) {
             .then((res => {
                 const random = Math.floor(Math.random() * res.length);
                 res = res[random]
-                return reply(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res)) 
+                return reply(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res)) 
             }))
     };
     return reply('Do you want to hear: new, top or random confessions?');
@@ -104,7 +104,7 @@ app.on('callback_query', (ctx) => {
                         .then(() => {
                             return confessions.findOne({ id: res.id })
                                 .then((res) => {
-                                    ctx.editMessageText(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
+                                    ctx.editMessageText(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
                                     return ctx.answerCbQuery('Changed vote to 👍')
                                 })
                         })
@@ -117,7 +117,7 @@ app.on('callback_query', (ctx) => {
                     .then(() => {
                         return confessions.findOne({ id: res.id })
                             .then((res) => {
-                                ctx.editMessageText(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res));
+                                ctx.editMessageText(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res));
                                 return ctx.answerCbQuery('Changed vote to 👍')
                             })
                     })
@@ -131,7 +131,7 @@ app.on('callback_query', (ctx) => {
                         .then(() => {
                             return confessions.findOne({ id: res.id })
                                 .then((res) => {
-                                    ctx.editMessageText(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
+                                    ctx.editMessageText(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
                                     return ctx.answerCbQuery('Changed vote to 👎')
                                 })
                         })
@@ -144,7 +144,7 @@ app.on('callback_query', (ctx) => {
                     .then(() => {
                         return confessions.findOne({ id: res.id })
                             .then((res) => {
-                                ctx.editMessageText(`I recieved this message:\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
+                                ctx.editMessageText(`Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`, voteButtons(res))
                                 return ctx.answerCbQuery('👎')
                             })
                     })
