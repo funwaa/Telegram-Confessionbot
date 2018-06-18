@@ -7,101 +7,145 @@ const Markup = require('telegraf/markup');
 const app = new Telegraf(config.token);
 const Datastore = require('nedb-promises');
 
-let result;
-
-const confessions = Datastore.create('data/confessions')
-
-const inlineMessageRatingKeyboard = Markup.inlineKeyboard([
-    Markup.callbackButton('👍', 'like'),
-    Markup.callbackButton('👎', 'dislike')
-]).extra();
+const confessions = Datastore.create('data/confessions');
+const users = Datastore.create('data/users');
 
 app.start(({reply}) => reply('Hello my child, what do you want to confess today?.'));
 
-function submitConfession(message, text) {
-    if(!text) return app.telegram.sendMessage(message.chat.id, 'I do not have time for a empty confession!');
-    if(text.length > 240) return app.telegram.sendMessage(message.chat.id, 'Max character limit reached: ' + text.length + '/240');
-    confessions.count({})
-        .then(res => {
-            let data = {
-                id: res,
-                text: text,
-                upvote: 0,
-                downvote: 0
+function countConfessions() {
+    return confessions.count({});
+};
+
+const checkUser = message => {
+    return users.findOne({ _id: message.from.id })
+        .then((res => {
+            if(res === null) {
+                const userData = {
+                    _id: message.from.id,
+                    last: Date.now() - 60000,
+                    likes: [],
+                    dislikes: [],
+                };
+                return users.insert(userData)
+            }else {
+                return res
             };
-        confessions.insert(data)
-            .then(function() {
-                app.telegram.sendMessage(message.chat.id, 'Your confession has been recieved 🙏');
-            });
-    });
-
+        }));
 };
 
-function randomConfession(message) {
-    confessions.count({})
-        .then(res => {
-            const random = Math.floor(Math.random() * res);
-            confessions.findOne({ id: random })
-                .then(res => {
-                    if(res === null) return app.telegram.sendMessage(message.chat.id, 'Looks like nobody confessed their sins yet.');
-                    result = res;
-                    app.telegram.sendMessage(message.chat.id, res.text + '\n' + res.upvote + ' 👍     ' + res.downvote + ' 👎', inlineMessageRatingKeyboard);
-                });
-        });
+function submitConfession(message, reply) {
+    if(!message.text) return reply("My child i am blind, i can't see what you are showing me.");
+    if(message.text.startsWith('/') == true) return reply("I don't understand what you are trying to tell me!");
+    if(message.text.length > 240) return reply("Pardon, that's too much for me to remember " + message.text.length + '/240');
+    return countConfessions()
+        .then(res => ({
+            id: res,
+            postids: [],
+            text: message.text,
+            up: [],
+            down: []
+        }))
+        .then(submitData =>
+            confessions.insert(submitData))
+        .then(()=> {
+            return users.update({ _id: message.from.id }, {$set: {last: Date.now()}})})
+        .then(() => { return reply('Your Confession has been recieved, your sins have been forgiven.') });
 };
 
-function newestConfession(message) {
-    confessions.find({}).sort({ id: -1 })
-        .then(res => {
-            result = res[0];
-            app.telegram.sendMessage(message.chat.id, res[0].text + '\n' + res[0].upvote + ' 👍     ' + res[0].downvote + ' 👎', inlineMessageRatingKeyboard);
-        });
-};
-
-function topConfession(message) {
-    confessions.find({}).sort({ upvote: 1 })
-        .then(res => {
-            result = res[0];
-            app.telegram.sendMessage(message.chat.id, res[0].text + '\n' + res[0].upvote + ' 👍     ' + res[0].downvote + ' 👎', inlineMessageRatingKeyboard);
-        });
-};
-
-function hatedConfession(message) {
-    confessions.find({}).sort({ upvote: -1, downvote: 1 })
-        .then(res => {
-            result = res[0];
-            app.telegram.sendMessage(message.chat.id, res[0].text + '\n' + res[0].upvote + ' 👍     ' + res[0].downvote + ' 👎', inlineMessageRatingKeyboard);
-        });
-};
-
-app.on('message', ({ message, reply }) => {
-    if(!message.text && message.chat.type == 'private') return reply("I can't handle media yet, sorry.");
-    if(!message.text) return null;
-    let command = message.text.split(" ", 2);
-    let text = message.text.replace(command[0], '').trim();
-    if(message.chat.type !== 'private' && command[0] == '/confess') return reply('You are only able to confess in a private chat.');
-    if(command[0].toLowerCase() == '/confess') return submitConfession(message, text);
-    if(command[0].toLowerCase() == '/confessions') {
-        if(!command[1]) return reply('Please provide a valid option: newest, random, top, hated');
-        if(command[1].toLowerCase() == 'random') return randomConfession(message);
-        if(command[1].toLowerCase() == 'newest') return newestConfession(message);
-        if(command[1].toLowerCase() == 'top') return topConfession(message);
-        if(command[1].toLowerCase() == 'hated') return hatedConfession(message);
-        app.telegram.sendMessage(message.chat.id, 'Not a valid option try: random, newest, top, hated');
+function sendConfessions(message, reply) {
+    const commandOptions = message.text.split(" ", 2);
+    if(!commandOptions[1]) return reply('Do you want to hear: new, top or random confessions?');
+    if(commandOptions[1].toLowerCase() == 'random') {
+        return countConfessions()
+            .then((res) => {
+                const random = Math.floor(Math.random() * res);
+                return confessions.findOne({ id: random })
+                    .then((res) => {
+                        users.update({ _id: message.from.id }, {$set: { last_post: res.id }}).then(() => {return reply(`I recieved this message:\n${res.text}\n${res.up.length} UP ${res.down.length} DOWN`,
+                        Markup.inlineKeyboard([
+                            Markup.selective(message.from.id, true),
+                            Markup.callbackButton('Like', 'like'),
+                            Markup.callbackButton('Dislike', 'dislike')
+                        ]).extra()
+                        )})
+                    })
+            })
     };
-})
+    if(commandOptions[1].toLowerCase() == 'new') {
+
+    };
+    if(commandOptions[1].toLowerCase() == 'top') {
+
+    };
+    return reply('Do you want to hear: new, top or random confessions?');
+};
+
+app.command('confessions', ({ reply, message }) => {
+    reply(message)
+    checkUser(message).then(() => {
+        console.log(message.text)
+        return sendConfessions(message, reply);
+    });
+});
+
+app.on('message', ({ reply, message }) => {
+    if(message.chat.type !== 'private') return null;
+    checkUser(message).then((res) => {
+        if(Date.now() < res.last + 60000) return reply('I have other people to talk to come back in a minute');
+        return submitConfession(message, reply);
+    });
+});
 
 app.action('like', (ctx) => {
-    if(result === null) return null;
-    confessions.update({ _id: result._id }, {$set: { upvote: + 1 }}).catch(err);
-    ctx.editMessageReplyMarkup({})
-    ctx.answerCbQuery('Upvoted!');
+    return users.findOne({ _id: ctx.update.callback_query.from.id })
+        .then((res) => {
+            return confessions.findOne({ id: res.last_post })
+                .then((res) => {
+                    if(res.up.indexOf(ctx.update.callback_query.from.id) == -1 && res.down.indexOf(ctx.update.callback_query.from.id) !== -1){
+                        const index = res.down.indexOf(ctx.update.callback_query.from.id);
+                        res.up.push(ctx.update.callback_query.from.id);
+                        res.down.splice(index, 1);
+                        return confessions.update({ id: res.id }, {$set: { up: res.up, down: res.down }})
+                        .then(() => {
+                            return ctx.reply('Changed vote to downvote')
+                        })
+                    };
+                    if(res.up.indexOf(ctx.update.callback_query.from.id) !== -1) {
+                        return ctx.reply('Already Upvoted')
+                    }
+                    res.up.push(ctx.update.callback_query.from.id);
+                    return confessions.update({ id: res.id }, {$set: { up: res.up }})
+                        .then(() => {
+                            return ctx.reply('Upvoted')
+                        })
+                })
+        })
 });
 
 app.action('dislike', (ctx) => {
-    confessions.update({ _id: result._id }, {$set: { downvote: + 1 }});
-    ctx.editMessageReplyMarkup({});
-    ctx.answerCbQuery('Downvoted.');
+    return users.findOne({ _id: ctx.update.callback_query.from.id })
+        .then((res) => {
+            return confessions.findOne({ id: res.last_post })
+                .then((res) => {
+                    if(res.down.indexOf(ctx.update.callback_query.from.id) == -1 && res.up.indexOf(ctx.update.callback_query.from.id) !== -1){
+                        const index = res.up.indexOf(ctx.update.callback_query.from.id);
+                        res.down.push(ctx.update.callback_query.from.id);
+                        res.up.splice(index, 1)
+                        return confessions.update({ id: res.id }, {$set: { down: res.down, up: res.up }})
+                        .then(() => {
+                            return ctx.reply('Changed vote to downvote')
+                        })
+                    };
+                    if(res.down.indexOf(ctx.update.callback_query.from.id) !== -1) {
+                        return ctx.reply('Already Downvoted')
+                    }
+                    res.down.push(ctx.update.callback_query.from.id);
+                    return confessions.update({ id: res.id }, {$set: { down: res.down }})
+                        .then(() => {
+                            return ctx.reply('Downvoted')
+                        })
+                })
+        })
 });
 
 app.startPolling()
