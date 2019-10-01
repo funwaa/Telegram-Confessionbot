@@ -10,7 +10,7 @@ const Datastore = require('nedb-promises');
 const confessions = Datastore.create('data/confessions');
 const users = Datastore.create('data/users');
 
-app.start(({reply}) => reply('Hello my child, what do you want to confess today?.'));
+app.start(({reply}) => reply('Hello my child, what do you want to confess today?'));
 
 const replyText = res => {
     return `Someone told me:\n\n${res.text}\n${res.up.length} 👍 ${res.down.length} 👎`
@@ -44,7 +44,7 @@ const checkUser = message => {
 };
 
 function submitConfession(message, reply) {
-    if(!message.text) return reply("My child i am blind, i can't see what you are showing me.");
+    if(!message.text) return reply("My child I am blind, I can't see what you are showing me.");
     if(message.text.startsWith('/') == true) return reply("I don't understand what you are trying to tell me!");
     if(message.text.length < 8) return reply('I need to know more about this, ' + message.text.length + '/8 characters');
     if(message.text.length > 420) return reply("Pardon, that's too much for me to remember, " + message.text.length + '/420');
@@ -59,12 +59,12 @@ function submitConfession(message, reply) {
             confessions.insert(submitData))
         .then(()=> {
             return users.update({ _id: message.from.id }, {$set: {last: Date.now()}})})
-        .then(() => { return reply('Your Confession has been recieved, your sins have been forgiven.') });
+        .then(() => { return reply('Your confession has been received, your sins have been forgiven.') });
 };
 
 function sendConfessions(message, reply) {
     const commandOptions = message.text.split(" ", 2);
-    if(!commandOptions[1]) return reply('Do you want to hear: new, top or random confessions? e.g /confessions option');
+    if(!commandOptions[1]) return reply('Do you want to hear: new, top or random confessions? e.g. /confessions option.');
     if(commandOptions[1].toLowerCase() == 'random') {
         return countConfessions()
             .then((res) => {
@@ -91,7 +91,7 @@ function sendConfessions(message, reply) {
                 return reply(replyText(res), voteButtons(res)) 
             }))
     };
-    return reply('Do you want to hear: new, top or random confessions? e.g /confessions option');
+    return reply('Do you want to hear: new, top or random confessions? e.g. /confessions option.');
 };
 
 app.on('callback_query', (ctx) => {
@@ -166,7 +166,7 @@ app.command('confessions', ({ reply, message }) => {
 app.on('message', ({ reply, message }) => {
     if(message.chat.type !== 'private') return null;
     checkUser(message).then((res) => {
-        if(Date.now() < res.last + 60000) return reply('I have other people to talk to come back in a minute');
+        if(Date.now() < res.last + 60000) return reply('I have other people to talk to,  come back in a minute.');
         return submitConfession(message, reply);
     });
 });
